@@ -1,0 +1,58 @@
+{
+    "id": "Arduino_Temp",
+    "serial_port": {
+        "ports_restrict": [
+          "COM3"
+        ],
+        "baud": "9600",
+        "numbits": "8",
+        "stopbits": "1",
+        "partitybits": "0",
+        "listening_timeout": "100000",
+        "death_timeout": "10000000"
+      },
+    "protocols": [
+        {
+          "exp_paremeters": [
+            {
+              "step": "1",
+              "nome":"R",
+              "min_val": "3",
+              "max_val": "22"
+            },
+            {
+              "step": "1",
+              "nome":"I",
+              "min_val": "2",
+              "max_val": "500"
+            }
+          ],
+        "measurement_channels": {
+          "num_channels": "5",
+          "channel_format": [
+            "##0.0",
+            "##0.1",
+            "#####2",
+            "#####3",
+            "#####4"
+          ]
+        },
+        "timeout": {
+          "default": "40000",
+          "id": "50000",
+          "cfg": "200000",
+          "cur": "200000",
+          "str": "200000",
+          "data_bin": "200000",
+          "no_data": "200000",
+          "end": "200000",
+          "stp": "200000",
+          "rst": "200000"
+        }
+      }
+    ],
+    "errors": [
+      "Incorrect State",
+      "Timeout"
+    ]
+  }
