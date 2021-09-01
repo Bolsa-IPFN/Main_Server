@@ -38,7 +38,7 @@ CORS(app)
 
 PORT = 5050
 BINARY_DATA_PORT = 5051
-SERVER = '192.168.56.1'#10.7.0.1'
+SERVER = '192.168.43.89'#10.7.0.1'
 DISCONNECT_MESSAGE = '!DISCONNECT'
 FORMAT='utf-8'
 HEADER=64
@@ -217,7 +217,7 @@ binary_server.bind((SERVER, BINARY_DATA_PORT))
 
 segredos = { "10.7.0.35":{"segredo":"sou eu","nome":"WP_LIS_IST"}, 
             "192.168.56.1":{"segredo":"estou bem","nome":"Monte_Carlo"},
-            "192.168.56.100":{"segredo":"test_Arduino","nome":"Arduino_Temp" }}
+            "192.168.43.14":{"segredo":"test_Arduino","nome":"Arduino_Temp" }}
 
 def send(msg,conn):
     try:
@@ -393,6 +393,7 @@ def check_Experiment(id_Exp, segredo,conn):
 
 def check_msg(myjson,conn):
     msg_id = myjson['msg_id']
+    print(str(myjson['msg_id']))
     #ACHO QUE NUNCA RECEBE msg_id = 2. Este if não é preciso
     if (msg_id == '2'):
         # conn_1 = EXP_CONN_LIST[myjson['experiment_name']] 
@@ -421,7 +422,7 @@ def check_msg(myjson,conn):
             send(send_mensage,conn)
         return True
     elif(msg_id == '7'):
-        #print ("msg_id = "+msg_id+ 'Results received: '+str(myjson['results']))
+        print ("msg_id = "+msg_id+ 'Results received: '+str(myjson['results']))
         return True
     elif(msg_id == '8'):
         print ("msg_id = "+msg_id+ 'Error ID:'+myjson['error']+' Status: '+myjson['status'])
@@ -439,10 +440,14 @@ def check_msg(myjson,conn):
         # HELPER_DATA = myjson
         # c.notify_all()
         # c.release()
+        if str(myjson["status"]) == "Experiment Starting":
+            print("Experiment strated at the time: "+str(myjson["timestamp"])+"\n") 
+            return True
         global q
         q.put(myjson)
         if str(myjson["status"]) == "Experiment Ended":
             print("Experiment ended at the time: "+str(myjson["timestamp"])+"\n") 
+            return True
             # printar a varivel global 
         elif str(myjson["status"]) == "running":
             #pass
@@ -450,6 +455,7 @@ def check_msg(myjson,conn):
             # Gravar numa variavel global todos os dados
         else:
             print("Json is incorrect verify the RPi_Server of the experemente ")
+        #return True
         
     else:
         return False
@@ -521,7 +527,9 @@ def handle_Experiments(conn,addr):
                         #Sera abusivo? Ao fazer raise de erro estou a sair como se houvesse erro
                         #mas o disconnect foi limpo
                         raise socket.error
-                    # print(msg+"\n")
+                    print(msg+"\n")
+                    print("msg type: "+ str(type(msg)))
+                    sleep(0.001)
                     myjson = json.loads(msg)
                     if 'msg_id' in myjson:
                         check_msg(myjson,conn)
@@ -654,8 +662,8 @@ def flask_ready():
 
 
 def start():
-    flask_server_thread = threading.Thread(target=flask_ready)
-    flask_server_thread.start()
+    # flask_server_thread = threading.Thread(target=flask_ready)
+    # flask_server_thread.start()
     binary_data_server_thread = threading.Thread(target=binary_data_service)
     binary_data_server_thread.start()
     # mandar codigos pela linha de comando
