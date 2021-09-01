@@ -70,10 +70,8 @@ var dados_f = [];
 var point_in_1 = 0
 var total_point_1 = 0
 
-function Start_MC(){
-	R = $("#R").val();
-	Iteration = $("#Iteration").val();
-	JSON = '{"experiment_name": "Monte_Carlo", "config_experiment": {"R":'+ String(R)+', "Iteration":'+String(Iteration)+'}}'
+function Start(){
+	JSON = '{"experiment_name": "Arduino_Temp", "config_experiment": {"R":"5","I":"5"}}'
 	var url = 'http://' + rpiIP + '/start_experiment';
 	console.log('JSON : ' +  url);
 	console.log('JSON : ' +  JSON);
@@ -161,6 +159,8 @@ function myStartFunction() {
 
  var point_x
  var point_y
+
+//  https://plotly.com/javascript/streaming/
 function desenharCSV(results) {
 			var dados_f = [];
 			//color = "rgb(" + (200*Math.random()+50).toString()+',' + (200*Math.random()+20).toString()+',' +(200*Math.random()+10).toString()+')';

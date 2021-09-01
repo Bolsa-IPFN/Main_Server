@@ -662,8 +662,8 @@ def flask_ready():
 
 
 def start():
-    # flask_server_thread = threading.Thread(target=flask_ready)
-    # flask_server_thread.start()
+    flask_server_thread = threading.Thread(target=flask_ready)
+    flask_server_thread.start()
     binary_data_server_thread = threading.Thread(target=binary_data_service)
     binary_data_server_thread.start()
     # mandar codigos pela linha de comando
