@@ -22,7 +22,9 @@ var bomba = 1
 var valvula_vacu = 1
 var file_names = null;
 var state = null;
+var frist = 0
 let Results = 0//setInterval(getPoints,50)
+var Names 
 //let myPressure_1 = null;
 
 /* var ctx = document.getElementById('myChart');
@@ -75,14 +77,15 @@ function Start(){
 	var url = 'http://' + rpiIP + '/start_experiment';
 	console.log('JSON : ' +  url);
 	console.log('JSON : ' +  JSON);
-	dados_f = [];
-	if (R_old !== R)
-	{
-		Plotly.purge('graph');
-		desenharCSV(R);
-		point_in_1 = 0
-		total_point_1 = 0
-	}
+	// dados_f = [];
+	
+	// if (R_old !== R)
+	// {
+	// 	Plotly.purge('graph');
+	// 	desenharCSV(R);
+	// 	point_in_1 = 0
+	// 	total_point_1 = 0
+	// }
 	$.ajax({
       url: url,      //Your api url
       type: 'POST',   //type is any HTTP method
@@ -94,9 +97,26 @@ function Start(){
       }
     });
 	getPoints(); 
-	R_old =R;
+	// R_old =R;
 	//recursively_ajax();
 }
+
+function Stop(){
+	JSON = '{"experiment_name": "Arduino_Temp"}';
+	var url = 'http://' + rpiIP + '/stop_experiment';
+	frist = 0
+	$.ajax({
+      url: url,      //Your api url
+      type: 'POST',   //type is any HTTP method
+      contentType: 'application/json;charset=UTF-8',
+	  data: JSON,
+      //Data as js object
+      success: function (response) {
+		console.log('PUT Response Pin : ' +  response);
+      }
+    });
+}
+
 
 function getPoints()
 {
@@ -106,6 +126,13 @@ function getPoints()
       url: url,      //Your api url
       type: 'GET',   //type is any HTTP method
       success: function (response) {
+		if (frist == 0)
+		{
+			Names = Object.keys(response.Data);
+			desenharCSV(Names);
+			frist = 1;
+		}
+		
 		/* console.log('GET Result : ' +  (response.Data));
 		console.log(response.status === 'Experiment Ended'); */
 		
@@ -122,18 +149,18 @@ function getPoints()
 			//console.log("Isto é inter")
 			if (typeof response.Data === 'object')
 			{
-				let j = parseInt(response.Data.circ,10);
+				// let j = parseInt(response.Data.circ,10);
 				/* console.log(j); 
 				console.log(typeof response.Data); */
-				Plotly.extendTraces('graph', {x: [[response.Data.eX]],y: [[response.Data.eY]]}, [j]);
-				if (j === 1)
-				{
-					point_in_1 = point_in_1+1;
-					document.getElementById('point_in').innerHTML = 'Points in : ' + parseInt(point_in_1,10);
-				}
-				total_point_1 = total_point_1 +1
-				document.getElementById('total_point').innerHTML = 'Total points : ' + parseInt(total_point_1,10);
-				document.getElementById('pi').innerHTML = 'PI : ' + (4*parseFloat(point_in_1,10)/parseFloat(total_point_1,10));
+				Plotly.extendTraces('graph', {x: Array(6).fill([response.Data.sample]),y: [[response.Data.temp_top],[response.Data.temp_bot],[response.Data.temp_in],[response.Data.temp_north],[response.Data.temp_south],[response.Data.temp]]}, [0,1,2,3,4,5]);
+				// if (j === 1)
+				// {
+				// 	point_in_1 = point_in_1+1;
+				// 	document.getElementById('point_in').innerHTML = 'Points in : ' + parseInt(point_in_1,10);
+				// }
+				// total_point_1 = total_point_1 +1
+				// document.getElementById('total_point').innerHTML = 'Total points : ' + parseInt(total_point_1,10);
+				// document.getElementById('pi').innerHTML = 'PI : ' + (4*parseFloat(point_in_1,10)/parseFloat(total_point_1,10));
 				
 			}
 			getPoints()
@@ -150,124 +177,125 @@ function myStopFunction() {
   console.log(Results);
 }
 
-function myStartFunction() {
-  Results = setInterval(getPoints,50)
-  console.log("Valor da função");
-  console.log(Results);
-}
+// function myStartFunction() {
+//   Results = setInterval(getPoints,50)
+//   console.log("Valor da função");
+//   console.log(Results);
+// }
 
 
  var point_x
  var point_y
 
 //  https://plotly.com/javascript/streaming/
-function desenharCSV(results) {
-			var dados_f = [];
-			//color = "rgb(" + (200*Math.random()+50).toString()+',' + (200*Math.random()+20).toString()+',' +(200*Math.random()+10).toString()+')';
-			for (let i=0; i < 2; i++){
-				if (i === 1){
-					name= "IN";
-					point_x= "0";
-					point_y= "0";
-					color = "rgb(0, 204, 0)";
-				}
-				else{
-					name = "OUT";
-					point_x= results.toString();
-					point_y= results.toString();
-					color = "rgb(255, 0, 0)";
-				}
-				dados_f.push({
-						  name: name,
-						  x: [point_x],
-						  y: [point_y],
-						  marker: {
-							color: color,
-							size: 5,
-						  },
-						  line: {
-							color: color,
-							width: 0,
-						  },
-						  mode: 'lines+markers',
-						  type: 'scatter',
-						});
-			}
-			var layout = {
-				title: 'Monte Carlo',
-				width: 800,
-				height: 800,
-				xaxis: {
-					title: 'R [ua]',
-					titlefont: {
-					  family: 'Arial, sans-serif',
-					  size: 18,
-					  color: 'black'
-					},
-					showticklabels: true,
-					exponentformat: 'e',
-					showexponent: 'all',
-					range: [0, R]
-				},
-				yaxis: {
-					title: 'R [ua]',
-					titlefont: {
-					  family: 'Arial, sans-serif',
-					  size: 18,
-					  color: 'black'
-					},
-					showticklabels: true,
-					  range: [0, R]
-					
-				},
-				shapes: [
+function desenharCSV(names) {
+	console.log(names)
+	var trace1 = {
+		x: [],
+		y: [],
+		// xaxis: 'x1',
+		// yaxis: 'y1',
+		mode: 'lines',
+		line: {
+		  color: '#80CAF6',
+		  shape: 'spline'
+		},
+		name: names[1]
+	  };
+	  
+	  var trace2 = {
+		x: [],
+		y: [],
+		
+		// xaxis: 'x2',
+		// yaxis: 'y2',
+		mode: 'lines',
+		line: {color: '#DF56F1'},
+		name: names[2]
+	  };
+	  
+	  var trace3 = {
+		x: [],
+		y: [],
+		// xaxis: 'x3',
+		// yaxis: 'y3',
+		mode: 'lines',
+		line: {color: '#FF5733'},
+		name: names[3]
+	  };
+	  
+	  var trace4 = {
+		x: [],
+		y: [],
+		// xaxis: 'x4',
+		// yaxis: 'y4',
+		mode: 'lines',
+		line: {color: '#2A79DE'},
+		name: names[4]
+	  };
 
-					// Unfilled Circle
-
-					{
-					  type: 'circle',
-					  xref: 'x',
-					  yref: 'y',
-					  x0: -R,
-					  y0: -R,
-					  x1: R,
-					  y1: R,
-					  line: {
-						color: "rgb(0, 204, 0)",
-						width: 1
-					  }
-					},
-					{
-					  type: 'line',
-					  xref: 'paper',
-					  yref: 'paper',
-					  x0: 0,
-					  y0: R,
-					  x1: R,
-					  y1: R,
-					  line: {
-						color: "rgb(255, 0, 0)",
-						width: 1
-					  }
-					},
-					{
-					  type: 'line',
-					  xref: 'paper',
-					  yref: 'paper',
-					  x0: R,
-					  y0: R,
-					  x1: R,
-					  y1: 0,
-					  line: {
-						color: "rgb(255, 0, 0)",
-						width: 1
-					  }
-					}
-				],
-				
-			};
-			console.log(dados_f);
-			Plotly.newPlot('graph', dados_f, layout);
+	  var trace5 = {
+		x: [],
+		y: [],
+		// xaxis: 'x5',
+		// yaxis: 'y5',
+		mode: 'lines',
+		line: {color: '#AA2ADE'},
+		name: names[5]
+	  };
+	  
+	  var trace6 = {
+		x: [],
+		y: [],
+		// xaxis: 'x6',
+		// yaxis: 'y6',
+		mode: 'lines',
+		line: {color: '#32DE2A'},
+		name: names[6]
+	  };
+	var dados_f = [trace1,trace2,trace3,trace4,trace5,trace6];
+	var layout = {
+		title: 'Temp\'s',
+		width: 1600,
+		height: 800,
+		// xaxis1: {
+		// 	// type: 'date',
+		// 	anchor: 'x1',
+		// 	/* domain: [0, 1], */
+		// 	/* showticklabels: false */
+		//   },
+		//   xaxis2: {
+		// 	// type: 'date',
+		// 	anchor: 'x2',
+		// 	/* domain: [0, 1] */
+		//   },
+		//   xaxis3: {
+		// 	// type: 'date',
+		// 	anchor: 'x3',
+		// 	/* domain: [0, 1], */
+		// 	// showticklabels: false
+		//   },
+		//   xaxis4: {
+		// 	// type: 'date',
+		// 	anchor: 'x4',
+		// 	/* domain: [0, 1] */
+		//   },
+		//   xaxis5: {
+		// 	// type: 'date',
+		// 	anchor: 'x5',
+		// 	/* domain: [0, 1], */
+		// 	// showticklabels: false
+		//   },
+		//   xaxis6: {
+		// 	// type: 'date',
+		// 	anchor: 'x6',
+		// 	/* domain: [0, 1] */
+		//   },
+		//  grid: {rows: 3, columns: 2, pattern: 'independent'},
+		
+	};
+	// console.log(dados_f);
+	Plotly.newPlot('graph', dados_f, layout);
 }
 
 
