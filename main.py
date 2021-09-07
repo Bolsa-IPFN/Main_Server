@@ -217,7 +217,7 @@ binary_server.bind((SERVER, BINARY_DATA_PORT))
 
 segredos = { "10.7.0.35":{"segredo":"sou eu","nome":"WP_LIS_IST"}, 
             "192.168.56.1":{"segredo":"estou bem","nome":"Monte_Carlo"},
-            "192.168.43.14":{"segredo":"test_Arduino","nome":"Arduino_Temp" }}
+            "192.168.56.100":{"segredo":"test_Arduino","nome":"Arduino_Temp" }}
 
 def send(msg,conn):
     try:
@@ -340,7 +340,7 @@ def ConfigureStartExperiment(user_json):
 
     #CHECK REPLY! (Alterações na função check_reply)
 
-@app.route('/user', methods=['POST'])
+@app.route('/start_experiment',  methods=['POST','OPTIONS'])
 def Flask_f1():
     if request.method == 'POST':
         #origin = request.headers.get('Origin')	
@@ -349,6 +349,8 @@ def Flask_f1():
         ConfigureStartExperiment(user_json)
 
         return '' #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
+    elif request.method == 'OPTIONS':
+        return ''
 
 
 
@@ -358,6 +360,15 @@ def StopCurrentExperiment(conn):
     send_message = '{"msg_id":"3"}'
     send(send_message,conn)
     #CHECK_REPLY
+
+
+@app.route('/stop_experiment', methods=['POST'])
+def Flask_f2():
+    if request.method == 'POST':
+        user_json = json.loads(request.data.decode(FORMAT))
+        StopCurrentExperiment(EXP_CONN_LIST[user_json['experiment_name']]);
+
+        return '' #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
 
 def Reset(conn):
     print("A enviar mensagem com pedido para dar reset na experiencia")
