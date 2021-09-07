@@ -1,5 +1,5 @@
 set FLASK_APP=main.py
 set FLASK_ENV=development
-python main.py
+python main_V2.py
 
 

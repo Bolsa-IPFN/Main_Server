@@ -38,7 +38,7 @@ CORS(app)
 
 PORT = 5050
 BINARY_DATA_PORT = 5051
-SERVER = '10.2.28.10'#10.7.0.1'
+SERVER = '192.168.1.102'#10.7.0.1'
 DISCONNECT_MESSAGE = '!DISCONNECT'
 FORMAT='utf-8'
 HEADER=64
@@ -253,7 +253,7 @@ def get_Config(Exp):
         data = json.load(json_file)
     return data
 
-def ConfigureRP(conn, id_exp):
+def ConfigureRP(id_exp):
     #data = json.dumps(get_Config(segredos[id_exp]['nome']))
     # print(data)
     # print(type(data))
@@ -263,9 +263,42 @@ def ConfigureRP(conn, id_exp):
     
     send_mensage ='{"msg_id": "1","config_file":'+str(data_1)+'}'
     print(send_mensage)
-    send(send_mensage,conn)
+    # send(send_mensage,conn)
     global EXP_PROCOL
     EXP_PROCOL[segredos[id_exp]['nome']] = '{"protocols":'+str(data['protocols']).replace('\'','"')+'}'
+    if type(send_mensage) != 'dict':
+        return json.loads(send_mensage)
+    else:
+        return send_mensage
+
+@app.route('/ConfigFile', methods=['POST'])
+def Send_Config_File():
+    if request.method == 'POST':
+
+        print(request.json)
+        print(type(request.json))
+        msg_erro = check_Experiment(request.json["id_RP"], request.json["segredo"],'Not a socket')
+        if (msg_erro == 0):
+            print ('reply_id = 6, Comunicação: Conecção estabelecida.')
+            send_mensage ='{"reply_id": "6", "status":"0","info": "Segredo correcto. Bem vindo ao e-lab!"}'
+            # send(send_mensage,conn)
+            return ConfigureRP(request.json["id_RP"])
+        elif (msg_erro == -1):
+            print ('msg_id = 6, ERROR: Segredo incorreto.')
+            send_mensage ='{"reply_id": "6", "status":"-1","error": "Segredo incorreto.", "nota":"Verifique se os ficheiros de autenticação estao atualizados."}'
+            if type(send_mensage) != 'dict':
+                return json.loads(send_mensage)
+            else:
+                return send_mensage
+        elif (msg_erro == -2):
+            print ('msg_id = 6, ERROR: Experiencia não existe na data base.')
+            send_mensage ='{"reply_id": "6", "status":"-2","error": "Experiencia não existe na data base.", "nota":"Contacte o E-lab a experiencia ainda não deve estar registada."}'
+            if type(send_mensage) != 'dict':
+                return json.loads(send_mensage)
+            else:
+                return send_mensage
+
+        return {"error":"Critical Fail!!"} #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
 
 
 def ConfigureStartExperiment(user_json):
@@ -340,7 +373,7 @@ def ConfigureStartExperiment(user_json):
 
     #CHECK REPLY! (Alterações na função check_reply)
 
-@app.route('/user', methods=['POST'])
+@app.route('/startexperiment', methods=['POST'])
 def Flask_f1():
     if request.method == 'POST':
         #origin = request.headers.get('Origin')	
@@ -380,12 +413,13 @@ def check_Experiment(id_Exp, segredo,conn):
         if (segredo == segredos[id_Exp]['segredo']):
             print('A experiencia '+ segredos[id_Exp]['nome'] + ' ('+id_Exp +') foi conectada')
             global EXP_CONN_LIST
-            EXP_CONN_LIST[segredos[id_Exp]['nome']] = conn
-            print(' ')
-            print(' Print dict : \n\n')
-            print(EXP_CONN_LIST)
-            print(' ')
-            print(' ')
+            if conn != 'Not a socket ':
+                EXP_CONN_LIST[segredos[id_Exp]['nome']] = conn
+                print(' ')
+                print(' Print dict : \n\n')
+                print(EXP_CONN_LIST)
+                print(' ')
+                print(' ')
             return 0
         return -1
     else:
@@ -658,7 +692,7 @@ def local_command_func():
             print_help()
 
 def flask_ready():
-    app.run('127.0.0.1',8001,debug=False)
+    app.run(SERVER,8001,debug=False)
 
 
 def start():
