@@ -38,13 +38,32 @@ CORS(app)
 
 PORT = 5050
 BINARY_DATA_PORT = 5051
-SERVER = '192.168.1.102'#10.7.0.1'
+SERVER = '194.210.159.33'#10.7.0.1'
 DISCONNECT_MESSAGE = '!DISCONNECT'
 FORMAT='utf-8'
 HEADER=64
 BINARY_DATA_LOCATION_BASE = "~/EXP_SERVER_DATA/datafile"
 HELPER_DATA = {}
 FLAG = 0
+
+FREE_DATA_BASE  = {"Monte_Carlo":\
+                                [   {
+                                        "apparatus_id":"1",\
+                                        "protocol_id":"",\
+                                        "config": {"R":"5","Iteration":"100"},\
+                                        "status": "waiting"
+                                    }
+                                ],
+                    "Arduino_Temp":\
+                                [   {
+                                        "apparatus_id":"1",\
+                                        "protocol_id":"",\
+                                        "config": {"R":"5","I":"5"},\
+                                        "status": "waiting"
+                                    }
+                                ]
+                }
+
 c = threading.Condition()
 q = Queue()
 
@@ -271,7 +290,7 @@ def ConfigureRP(id_exp):
     else:
         return send_mensage
 
-@app.route('/ConfigFile', methods=['POST'])
+@app.route('/getConfig', methods=['POST'])
 def Send_Config_File():
     if request.method == 'POST':
 
@@ -383,7 +402,38 @@ def Flask_f1():
 
         return '' #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
 
+@app.route('/getExperiment',  methods=['POST','OPTIONS'])
+def Check_User_Experiment():
+    if request.method == 'POST':
+        #origin = request.headers.get('Origin')	
+        print(request.data)
+        RPi_exp = json.loads(request.data.decode(FORMAT))
+        i=0 
+        if (FREE_DATA_BASE[RPi_exp["name"]][i]["status"] == "waiting" ):
+            send_mensage = {"msg_id":"2","config":FREE_DATA_BASE[RPi_exp["name"]][i]["config"]}
+        
+        # print(list(FREE_EXPERIMENT.values()).index("name"))
+        # print( Object.values(json).includes("bar"))
+        return send_mensage #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
+    elif request.method == 'OPTIONS':
+        return ''
 
+@app.route('/sendResult',  methods=['POST','OPTIONS'])
+def recive_data_from_pi():
+    if request.method == 'POST':
+        #origin = request.headers.get('Origin')	
+        print(request.data)
+        RPi_exp = json.loads(request.data.decode(FORMAT))
+        if (request.args.get('name')):
+            send_mensage = {"teste":"okok"}
+        else:
+            send_mensage = {"teste":"ppp"}
+        
+        # print(list(FREE_EXPERIMENT.values()).index("name"))
+        # print( Object.values(json).includes("bar"))
+        return send_mensage #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
+    elif request.method == 'OPTIONS':
+        return ''
 
 
 def StopCurrentExperiment(conn):

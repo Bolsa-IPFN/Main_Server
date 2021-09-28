@@ -38,14 +38,19 @@ CORS(app)
 
 PORT = 5050
 BINARY_DATA_PORT = 5051
-SERVER = '10.2.28.10'#10.7.0.1'
+SERVER = '194.210.159.33'#10.7.0.1'
 DISCONNECT_MESSAGE = '!DISCONNECT'
 FORMAT='utf-8'
-HEADER=64
+HEADER=2048
 BINARY_DATA_LOCATION_BASE = "~/EXP_SERVER_DATA/datafile"
 HELPER_DATA = {}
 FLAG = 0
+
+FREE_EXPERIMENT = {"123":{"name":"Monte_Carlo"}}
+FREE_APPARATUS = {"1":{"experiment_id":"123"}}
+FREE_EXECUTION  = {"apparatus_id":"1","protocol_id":"", "config": {"R":"5","Iteration":"100"}}
 c = threading.Condition()
+vect_q = []
 q = Queue()
 
 #ITERADOR PARA DICIONARIOS PROTEGIDOS COM RW LOCK
@@ -203,6 +208,7 @@ class Protected_Dict(collections.abc.MutableMapping):
 #NAO DEMORAR ETERNIDADES A ITERAR
 EXP_CONN_LIST = Protected_Dict()
 EXP_PROCOL = Protected_Dict()
+vect_q = Protected_Dict()
 
 #SERVER = socket.gethostbyname(socket.gethostname())
 
@@ -223,6 +229,7 @@ def send(msg,conn):
     try:
         message = msg.encode(FORMAT)
         msg_length = len(message)
+        print("tamanho da mensagem: "+str(msg_length))
         send_length = str(msg_length).encode(FORMAT)
         send_length += b' ' * (HEADER - len(send_length))
         conn.sendall(send_length) 
@@ -270,7 +277,9 @@ def ConfigureRP(conn, id_exp):
 
 def ConfigureStartExperiment(user_json):
     #VALIDAR CONFIG
+    print("User Json:")
     print(user_json)
+    print("\n")
     verificar = []
     conn = EXP_CONN_LIST[user_json['experiment_name']]
     exp_config_json = user_json['config_experiment']
@@ -284,7 +293,9 @@ def ConfigureStartExperiment(user_json):
     print('Limites: '+str(tester['protocols'][protocol]['exp_paremeters']))
     print('\n')
     print('Tamanho do que o config tem guardaddo: '+str(len(tester['protocols'][protocol]['exp_paremeters'])))
+    print("User Json:")
     print (user_json)
+    print("\n")
     print('Tamanho do que o user mandou: '+str(len(exp_config_json.keys())))
     print('\n')
     if len(tester['protocols'][protocol]['exp_paremeters']) == len(exp_config_json.keys()):
@@ -352,11 +363,47 @@ def Flask_f1():
     elif request.method == 'OPTIONS':
         return ''
 
+def ConfigureActionExperiment(user_json):
+    conn = EXP_CONN_LIST[user_json['experiment_name']]
+    exp_config_json = user_json['experiment_action']
+    print (exp_config_json)
+
+    # if 'protocol' in user_json:
+    #     protocol = int(user_json['protocol'])
+    # else:
+    #     protocol = 0
+
+    send_message = '{"msg_id":"12","action":'+str(exp_config_json).replace('\'','"')+'}'
+    print(send_message)
+    send(send_message,conn)
+
+@app.route('/action_experiment',  methods=['POST','OPTIONS'])
+def Action_on_Experiment():
+    if request.method == 'POST':
+        #origin = request.headers.get('Origin')	
+        print(request.data)
+        
+        user_json = json.loads(request.data.decode(FORMAT))
+        ConfigureActionExperiment(user_json)
+        
+            # ConfigureActionExperiment(request.data)
+        return '' #jsonify({'JSON Enviado' : request.args.get('JSON'), 'result': 'OK!'})
+    elif request.method == 'OPTIONS':
+        return ''
 
 
 
 def StopCurrentExperiment(conn):
+    global vect_q
     print("A enviar mensagem com pedido para para experiencia\n")
+    # try:
+    #     #print("\n\n\n\n\ aqui\n\n\n")
+    #     print("\n\n Empty?")
+    #     print(vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty())
+    #     print("\n\n")
+    #     vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].clear()
+    # except:
+    #     pass
     send_message = '{"msg_id":"3"}'
     send(send_message,conn)
     #CHECK_REPLY
@@ -391,7 +438,9 @@ def check_Experiment(id_Exp, segredo,conn):
         if (segredo == segredos[id_Exp]['segredo']):
             print('A experiencia '+ segredos[id_Exp]['nome'] + ' ('+id_Exp +') foi conectada')
             global EXP_CONN_LIST
+            global vect_q
             EXP_CONN_LIST[segredos[id_Exp]['nome']] = conn
+            vect_q [str(segredos[id_Exp]['nome'])] = Queue()
             print(' ')
             print(' Print dict : \n\n')
             print(EXP_CONN_LIST)
@@ -451,13 +500,41 @@ def check_msg(myjson,conn):
         # HELPER_DATA = myjson
         # c.notify_all()
         # c.release()
+        global  q
+        global vect_q
         if str(myjson["status"]) == "Experiment Starting":
             print("Experiment strated at the time: "+str(myjson["timestamp"])+"\n") 
+            while (not vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty()):
+                print("\n")
+                print("\n")
+                print(vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty()) 
+                print("1\n")
+                print("1\n")
+                vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].get()
+                print("2\n")
+                print("2\n")
             return True
-        global q
-        q.put(myjson)
+        
+        # 
+        # "Nome da experiencia" : conn
+        #  Exp_conn_list[Cavidade] => conn 
+        #  Exp_conn_list [...] == conn => caviade  
+        # print ("Minha")
+        # print(list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)])
+        # print("Tua")
+        # for name, age in EXP_CONN_LIST.items(): # for name, age in dictionary.iteritems(): (for Python 2.x)
+        #     if age == conn:
+        #         print(name)
+        vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].put(myjson)
+        # q.put(myjson)
         if str(myjson["status"]) == "Experiment Ended":
-            print("Experiment ended at the time: "+str(myjson["timestamp"])+"\n") 
+            print("Experiment ended at the time: "+str(myjson["timestamp"])+"\n")
+            print("\n")
+            # print(vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty())
+            # while (not vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty()):
+            #     print("\n")
+            #     # print(vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].empty()) 
+            #     vect_q[list(EXP_CONN_LIST.keys())[list(EXP_CONN_LIST.values()).index(conn)]].get()
             return True
             # printar a varivel global 
         elif str(myjson["status"]) == "running":
@@ -477,8 +554,10 @@ def getPoint():
     # c.acquire()
     # c.wait()
     global q
-    send_data = q.get()
-    q.task_done()
+    global vect_q
+    if request.args.get('name') != '':
+        send_data =  vect_q[request.args.get('name')].get()
+        vect_q[request.args.get('name')].task_done()
     #HELPER_DATA = {}
     # c.release()
     print(send_data)
@@ -530,6 +609,7 @@ def handle_Experiments(conn,addr):
                 raise socket.error
             else:
                 msg_length = int(msg_length)
+                print("recebi que a mensagem tem "+str(msg_length)+" char's.")
                 msg = conn.recv(msg_length, socket.MSG_WAITALL).decode(FORMAT)
                 if msg == b'':
                     raise socket.error
@@ -645,6 +725,7 @@ def local_command_func():
             elif re_match.group("experiment_command") == "stp":
                     print("Comando de stop recebido. A enviar para experiência")
                     exp_conn = EXP_CONN_LIST[re_match.group("experiment_name")]
+                    
                     StopCurrentExperiment(exp_conn)
                 #find experiment in socket list
                 #send stop command
@@ -670,6 +751,7 @@ def local_command_func():
 
 def flask_ready():
     app.run('127.0.0.1',8001,debug=False)
+
 
 
 def start():
